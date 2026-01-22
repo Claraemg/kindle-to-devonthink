@@ -3,6 +3,7 @@
 # Kindle to DEVONthink - Installer
 #
 # Sets up automatic highlight syncing when you plug in your Kindle.
+# Highlights are imported directly into DEVONthink.
 #
 
 set -e
@@ -14,13 +15,14 @@ echo ""
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 INSTALL_DIR="$HOME/.kindle-sync"
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
-OUTPUT_DIR="$HOME/Documents/Kindle Highlights"
 PLIST_NAME="com.user.kindle-sync.plist"
 
 echo "This will install:"
 echo "  Script:      $INSTALL_DIR/sync_highlights.py"
 echo "  LaunchAgent: $LAUNCH_AGENTS_DIR/$PLIST_NAME"
-echo "  Output:      $OUTPUT_DIR/"
+echo ""
+echo "Highlights will be imported into DEVONthink's inbox"
+echo "in a group called 'Kindle Highlights'."
 echo ""
 read -p "Continue? (y/n) " -n 1 -r
 echo ""
@@ -34,7 +36,6 @@ echo ""
 echo "Creating directories..."
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$LAUNCH_AGENTS_DIR"
-mkdir -p "$OUTPUT_DIR"
 
 echo "Installing script..."
 cp "$SCRIPT_DIR/sync_highlights.py" "$INSTALL_DIR/"
@@ -77,9 +78,8 @@ launchctl load "$LAUNCH_AGENTS_DIR/$PLIST_NAME"
 echo ""
 echo "Done!"
 echo ""
-echo "Now:"
-echo "  1. Plug in your Kindle - sync runs automatically"
-echo "  2. Point DEVONthink at: $OUTPUT_DIR"
+echo "Now just plug in your Kindle - highlights will import"
+echo "into DEVONthink automatically."
 echo ""
 echo "Manual sync:  python3 $INSTALL_DIR/sync_highlights.py"
 echo "View log:     cat ~/.kindle-sync.log"

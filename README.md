@@ -1,12 +1,12 @@
 # Kindle to DEVONthink
 
-Automatically sync your Kindle highlights to DEVONthink as Markdown notes.
+Automatically sync your Kindle highlights directly into DEVONthink.
 
 ## What it does
 
 1. Plug in your Kindle
-2. Highlights sync automatically
-3. One Markdown file per book appears in DEVONthink
+2. Highlights import automatically into DEVONthink
+3. One Markdown document per book, in a "Kindle Highlights" group
 
 No subscriptions, no cloud services, no Amazon login required.
 
@@ -14,7 +14,7 @@ No subscriptions, no cloud services, no Amazon login required.
 
 - macOS 12+
 - Python 3.8+ (included on modern Macs)
-- DEVONthink (any version)
+- DEVONthink 3
 - An older Kindle that mounts as a USB drive (pre-2018 models like Paperwhite 1-3)
 
 ## Installation
@@ -25,14 +25,11 @@ cd kindle-to-devonthink
 ./install.sh
 ```
 
-Then point DEVONthink at the highlights folder:
-1. Open DEVONthink
-2. **File > Index Files and Folders...**
-3. Select `~/Documents/Kindle Highlights/`
+That's it. DEVONthink will be set up automatically.
 
 ## Output format
 
-Each book becomes a Markdown file with YAML frontmatter:
+Each book becomes a Markdown document in DEVONthink with YAML frontmatter:
 
 ```markdown
 ---
@@ -52,7 +49,7 @@ See `example-output.md` for a full example.
 
 ## Usage
 
-Highlights sync automatically when you plug in your Kindle. To run manually:
+Highlights import automatically when you plug in your Kindle. To run manually:
 
 ```bash
 python3 ~/.kindle-sync/sync_highlights.py
@@ -62,6 +59,10 @@ Check the log:
 ```bash
 cat ~/.kindle-sync.log
 ```
+
+## Where do the highlights go?
+
+They're imported into a group called "Kindle Highlights" in your DEVONthink inbox. You can move them to any database afterward.
 
 ## How it handles duplicates
 

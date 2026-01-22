@@ -2,8 +2,8 @@
 """
 Kindle to DEVONthink Highlight Sync
 
-Parses My Clippings.txt from a Kindle and creates clean Markdown notes.
-One note per book, sorted by page number, with metadata for citations.
+Parses My Clippings.txt from a Kindle and imports Markdown notes
+directly into DEVONthink. One note per book, sorted by page number.
 
 Author: Clara (with help from Claude)
 License: MIT
@@ -13,7 +13,8 @@ import re
 import hashlib
 import json
 import logging
-import argparse
+import subprocess
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -22,10 +23,9 @@ from typing import Optional
 
 # === CONFIGURATION ===
 
-KINDLE_VOLUME = "/Volumes/Kindle"
-OUTPUT_DIR = Path.home() / "Documents" / "Kindle Highlights"
 STATE_FILE = Path.home() / ".kindle-sync-state.json"
 LOG_FILE = Path.home() / ".kindle-sync.log"
+DEVONTHINK_GROUP = "Kindle Highlights"  # Group name in DEVONthink
 
 
 # === DATA STRUCTURES ===
@@ -66,8 +66,8 @@ class Book:
         title = re.sub(r'[<>:"/\\|?*]', '', self.title)
         author = re.sub(r'[<>:"/\\|?*]', '', self.author)
         if author and author != "Unknown":
-            return f"{title} — {author}.md"
-        return f"{title}.md"
+            return f"{title} — {author}"
+        return title
 
 
 # === PARSING ===
@@ -192,6 +192,81 @@ def save_state(state: dict):
     STATE_FILE.write_text(json.dumps(state, indent=2))
 
 
+# === DEVONTHINK INTEGRATION ===
+
+def import_to_devonthink(name: str, content: str) -> bool:
+    """Import a Markdown document into DEVONthink."""
+
+    # Write content to a temp file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
+        f.write(content)
+        temp_path = f.name
+
+    # AppleScript to import into DEVONthink
+    script = f'''
+    tell application "DEVONthink 3"
+        -- Find or create the Kindle Highlights group in the inbox
+        set theDatabase to inbox
+        set groupName to "{DEVONTHINK_GROUP}"
+
+        -- Look for existing group
+        set theGroup to missing value
+        try
+            set theGroup to (first record of theDatabase whose name is groupName and type is group)
+        end try
+
+        -- Create group if it doesn't exist
+        if theGroup is missing value then
+            set theGroup to create record with {{name:groupName, type:group}} in theDatabase
+        end if
+
+        -- Check if document already exists
+        set docName to "{name}"
+        set existingDoc to missing value
+        try
+            set existingDoc to (first record of theGroup whose name is docName)
+        end try
+
+        -- Import the file
+        set importedDoc to import POSIX file "{temp_path}" to theGroup
+        set name of importedDoc to docName
+
+        -- Delete old version if it existed
+        if existingDoc is not missing value then
+            delete record existingDoc
+        end if
+
+        return true
+    end tell
+    '''
+
+    try:
+        result = subprocess.run(
+            ['osascript', '-e', script],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+        # Clean up temp file
+        Path(temp_path).unlink(missing_ok=True)
+
+        if result.returncode != 0:
+            logging.error(f"AppleScript error: {result.stderr}")
+            return False
+
+        return True
+
+    except subprocess.TimeoutExpired:
+        logging.error("DEVONthink import timed out")
+        Path(temp_path).unlink(missing_ok=True)
+        return False
+    except Exception as e:
+        logging.error(f"Error importing to DEVONthink: {e}")
+        Path(temp_path).unlink(missing_ok=True)
+        return False
+
+
 # === MARKDOWN GENERATION ===
 
 def generate_markdown(book: Book, existing_ids: set) -> tuple[str, list[str]]:
@@ -233,9 +308,8 @@ def generate_markdown(book: Book, existing_ids: set) -> tuple[str, list[str]]:
     return '\n'.join(lines), new_ids
 
 
-def update_or_create_note(book: Book, output_dir: Path, state: dict) -> int:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    filepath = output_dir / book.safe_filename
+def process_book(book: Book, state: dict) -> int:
+    """Generate markdown and import into DEVONthink."""
     existing_ids = set(state.get("imported_ids", []))
 
     markdown, new_ids = generate_markdown(book, existing_ids)
@@ -244,11 +318,13 @@ def update_or_create_note(book: Book, output_dir: Path, state: dict) -> int:
         logging.info(f"No new highlights for: {book.title}")
         return 0
 
-    filepath.write_text(markdown, encoding='utf-8')
-    state["imported_ids"].extend(new_ids)
-
-    logging.info(f"{'Updated' if filepath.exists() else 'Created'}: {book.safe_filename} (+{len(new_ids)} highlights)")
-    return len(new_ids)
+    if import_to_devonthink(book.safe_filename, markdown):
+        state["imported_ids"].extend(new_ids)
+        logging.info(f"Imported: {book.safe_filename} (+{len(new_ids)} highlights)")
+        return len(new_ids)
+    else:
+        logging.error(f"Failed to import: {book.safe_filename}")
+        return 0
 
 
 # === MAIN ===
@@ -280,10 +356,6 @@ def find_clippings() -> Optional[Path]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sync Kindle highlights to Markdown")
-    parser.add_argument("--output", "-o", help=f"Output directory (default: {OUTPUT_DIR})")
-    args = parser.parse_args()
-
     setup_logging()
     logging.info("=" * 50)
     logging.info("Kindle highlight sync started")
@@ -292,7 +364,6 @@ def main():
     if not clippings_path:
         return 1
 
-    output_dir = Path(args.output) if args.output else OUTPUT_DIR
     state = load_state()
     logging.info(f"Loaded state: {len(state.get('imported_ids', []))} highlights already imported")
 
@@ -301,10 +372,10 @@ def main():
 
     total_new = 0
     for book in books.values():
-        total_new += update_or_create_note(book, output_dir, state)
+        total_new += process_book(book, state)
 
     save_state(state)
-    logging.info(f"Sync complete: {total_new} new highlights added")
+    logging.info(f"Sync complete: {total_new} new highlights imported to DEVONthink")
     logging.info("=" * 50)
 
     return 0
