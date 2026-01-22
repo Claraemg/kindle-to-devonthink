@@ -310,8 +310,7 @@ def main():
     books = parse_clippings(clippings_path)
     logging.info(f"Found {len(books)} books with highlights")
 
-    # Write to DEVONthink's inbox folder - files dropped here are auto-imported
-    output_dir = Path.home() / "Library" / "Application Support" / "DEVONthink 3" / "Inbox"
+    output_dir = Path.home() / "Documents" / "Kindle Highlights"
 
     total_new = 0
     for book in books.values():
