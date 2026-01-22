@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local state files (these are user-specific)
+.kindle-sync-state.json
+.kindle-sync.log
+.kindle-sync-stdout.log
+.kindle-sync-stderr.log
+
+# Test output
+test-output/
