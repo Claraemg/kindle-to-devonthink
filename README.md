@@ -5,8 +5,8 @@ Automatically sync your Kindle highlights directly into DEVONthink.
 ## What it does
 
 1. Plug in your Kindle
-2. Highlights import automatically into DEVONthink
-3. One Markdown document per book, in a "Kindle Highlights" group
+2. Highlights are parsed and saved as Markdown files
+3. One Markdown document per book, sorted by page number
 
 No subscriptions, no cloud services, no Amazon login required.
 
@@ -25,7 +25,25 @@ cd kindle-to-devonthink
 bash install.sh
 ```
 
-That's it. DEVONthink will be set up automatically.
+This installs the sync script and a LaunchAgent that runs when you plug in your Kindle.
+
+**Note:** You may need to grant Terminal (or your terminal app) Full Disk Access in **System Settings → Privacy & Security → Full Disk Access** for the script to read your Kindle.
+
+## Setting up automatic DEVONthink import (optional)
+
+By default, highlights are saved to `~/Documents/Kindle Highlights/`. To have them automatically import into DEVONthink:
+
+1. Open **Finder** and navigate to **Documents → Kindle Highlights**
+2. Right-click the **Kindle Highlights** folder
+3. Click **Services → Folder Actions Setup**
+4. Click the **+** button
+5. Navigate to: `~/Library/Scripts/Folder Action Scripts/`
+6. Select **"DEVONthink - Import & Delete.scpt"**
+7. Click **Attach**
+
+If the script isn't there, install it via DEVONthink: **Help → Support Assistant → Install Extras**.
+
+Now when you plug in your Kindle, highlights will automatically appear in DEVONthink's inbox. DEVONthink must be running for this to work.
 
 ## Output format
 
@@ -62,7 +80,7 @@ cat ~/.kindle-sync.log
 
 ## Where do the highlights go?
 
-They're imported into a group called "Kindle Highlights" in your DEVONthink inbox. You can move them to any database afterward.
+Highlights are saved to `~/Documents/Kindle Highlights/` as Markdown files. If you set up the Folder Action, they'll automatically import to DEVONthink's inbox and the originals will be deleted. Otherwise, drag the files into DEVONthink manually.
 
 ## How it handles duplicates
 
