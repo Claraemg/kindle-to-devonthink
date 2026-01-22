@@ -217,31 +217,39 @@ def generate_markdown(book: Book, existing_ids: set) -> tuple[str, list[str]]:
         return None, []
 
     lines = [
-        "---",
-        f'title: "{book.title}"',
-        f'author: "{book.author}"',
-        f"synced: {datetime.now().strftime('%Y-%m-%d')}",
-        "---",
+        f"# {book.title}",
+        f"## By {book.author}",
         "",
-        "## Highlights",
+        "---",
+        "### Highlights",
         "",
     ]
 
     for highlight in sorted_highlights:
-        if highlight.page:
-            ref = f"p. {highlight.page}"
-        elif highlight.location_start:
-            if highlight.location_end and highlight.location_end != highlight.location_start:
-                ref = f"loc. {highlight.location_start}–{highlight.location_end}"
-            else:
-                ref = f"loc. {highlight.location_start}"
-        else:
-            ref = "no location"
-
+        # Build the highlight text as a blockquote
         if highlight.is_note:
-            lines.append(f"- **{ref}** — *[Note]* {highlight.text}")
+            lines.append(f"> *[Note]* {highlight.text}")
         else:
-            lines.append(f"- **{ref}** — \"{highlight.text}\"")
+            lines.append(f"> {highlight.text}")
+        lines.append("")
+
+        # Build metadata line with colors
+        meta_parts = []
+        if highlight.page:
+            meta_parts.append(f'<font color="#d97706"><b>Page {highlight.page}</b></font>')
+        if highlight.location_start:
+            if highlight.location_end and highlight.location_end != highlight.location_start:
+                meta_parts.append(f'<font color="#2563eb"><b>Loc {highlight.location_start}-{highlight.location_end}</b></font>')
+            else:
+                meta_parts.append(f'<font color="#2563eb"><b>Loc {highlight.location_start}</b></font>')
+        if highlight.date_added:
+            date_str = highlight.date_added.strftime("%A, %d %B %Y %H:%M:%S")
+            meta_parts.append(f'<font color="#059669">{date_str}</font>')
+
+        if meta_parts:
+            lines.append(f'<p><small>{" &bull; ".join(meta_parts)}</small></p>')
+        lines.append("")
+        lines.append("---")
         lines.append("")
 
     new_ids = [h.highlight_id for h in new_highlights]
