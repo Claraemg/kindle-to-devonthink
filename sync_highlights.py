@@ -226,11 +226,11 @@ def generate_markdown(book: Book, existing_ids: set) -> tuple[str, list[str]]:
     ]
 
     for highlight in sorted_highlights:
-        # Build the highlight text as a blockquote
+        # Build the highlight text
         if highlight.is_note:
-            lines.append(f"> *[Note]* {highlight.text}")
+            lines.append(f"*[Note]* {highlight.text}")
         else:
-            lines.append(f"> {highlight.text}")
+            lines.append(f'"{highlight.text}"')
         lines.append("")
 
         # Build metadata line with colors
